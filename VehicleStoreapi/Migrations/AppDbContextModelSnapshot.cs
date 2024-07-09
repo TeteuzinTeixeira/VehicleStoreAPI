@@ -261,7 +261,8 @@ namespace VehicleStoreapi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("OrderId")
+                        .IsRequired()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Type")

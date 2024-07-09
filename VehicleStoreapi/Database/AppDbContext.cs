@@ -11,6 +11,8 @@ namespace VehicleStoreapi.Database
             : base(options)
         {
         }
+            
+        public DbSet<Vehicle.Vehicle> Vehicle { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -37,7 +39,7 @@ namespace VehicleStoreapi.Database
             builder.Entity<Vehicle.Vehicle>()
                 .HasOne(v => v.Order)
                 .WithMany()
-                .HasForeignKey(v => v.OrderId) // Assuming OrderId in Vehicle is Guid
+                .HasForeignKey(v => v.OrderId)
                 .IsRequired();
 
             

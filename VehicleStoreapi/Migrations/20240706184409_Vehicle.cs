@@ -203,7 +203,7 @@ namespace VehicleStoreapi.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "public.uuid_generate_v4()"),
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: true),
                     Model = table.Column<string>(type: "text", nullable: false),
                     Type = table.Column<string>(type: "text", nullable: false),
                     Year = table.Column<string>(type: "text", nullable: false),

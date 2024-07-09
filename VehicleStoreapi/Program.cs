@@ -4,11 +4,25 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.extensions;
+using VehicleStoreapi.Service;
+using VehicleStoreapi.Service.Impl;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
@@ -25,7 +39,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 
-WebApplication app = builder.Build();
+builder.Services.AddScoped<VehicleService, VehicleServiceImpl>();
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5181); // Porta HTTP
+    options.ListenAnyIP(7076, listenOptions =>
+    {
+        listenOptions.UseHttps();
+    }); // Porta HTTPS
+});
+
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -39,10 +64,13 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseCors("AllowAllOrigins");
+
+app.MapControllers();
+
 app.MapGet("users/me", async (ClaimsPrincipal claims, AppDbContext context) =>
     {
         string userId = claims.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value;
-
         return await context.Users.FindAsync(userId);
     })
     .RequireAuthorization();
