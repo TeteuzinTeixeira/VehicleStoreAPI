@@ -261,10 +261,6 @@ namespace VehicleStoreapi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("OrderId")
-                        .IsRequired()
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -282,8 +278,6 @@ namespace VehicleStoreapi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Vehicle", "Store");
@@ -300,8 +294,9 @@ namespace VehicleStoreapi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<byte>("Data")
-                        .HasColumnType("smallint");
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -315,6 +310,28 @@ namespace VehicleStoreapi.Migrations
                     b.HasIndex("VehicleId");
 
                     b.ToTable("VehicleImage", "Store");
+                });
+
+            modelBuilder.Entity("VehicleStoreapi.Model.Entities.OrderVehicleLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("public.uuid_generate_v4()");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("OrderVehicleLink", "Store");
                 });
 
             modelBuilder.Entity("VehicleStoreapi.Database.User", b =>
@@ -391,32 +408,42 @@ namespace VehicleStoreapi.Migrations
 
             modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.Vehicle", b =>
                 {
-                    b.HasOne("VehicleStoreapi.Database.Vehicle.Order", "Order")
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("VehicleStoreapi.Database.User", "User")
+                    b.HasOne("VehicleStoreapi.Database.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Order");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.VehicleImage", b =>
                 {
                     b.HasOne("VehicleStoreapi.Database.Vehicle.Vehicle", "Vehicle")
-                        .WithMany()
+                        .WithMany("Images")
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("VehicleStoreapi.Model.Entities.OrderVehicleLink", b =>
+                {
+                    b.HasOne("VehicleStoreapi.Database.Vehicle.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("VehicleStoreapi.Database.Vehicle.Vehicle", null)
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.Vehicle", b =>
+                {
+                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

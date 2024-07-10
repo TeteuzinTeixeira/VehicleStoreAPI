@@ -43,11 +43,11 @@ builder.Services.AddScoped<VehicleService, VehicleServiceImpl>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5181); // Porta HTTP
+    options.ListenAnyIP(5181);
     options.ListenAnyIP(7076, listenOptions =>
     {
         listenOptions.UseHttps();
-    }); // Porta HTTPS
+    });
 });
 
 var app = builder.Build();
