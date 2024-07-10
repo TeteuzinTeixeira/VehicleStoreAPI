@@ -32,48 +32,25 @@ public class VehicleController : ControllerBase
         
         return Ok(vehicle);
     }
-    
+
     [HttpPost("/SaveImages")]
-    public async Task<ActionResult<VehicleImage>> UploadImage(Guid vehicleId, [FromForm] VehicleImageUploadDto uploadDto)
+    public async Task<ActionResult> UploadFile([FromForm] FileModel fileModel)
     {
-        var vehicle = await _context.Vehicle.FindAsync(vehicleId);
-
-        if (vehicle == null)
+        try
         {
-            return NotFound();
+            string path = Path.Combine(@"C:\Mateus\VehicleStoreAPI\Imagens", fileModel.FileName);
+
+            using (Stream stream = new FileStream(path, FileMode.Create))
+            {
+                await fileModel.File.CopyToAsync(stream);
+            }
+
+            return Ok();
         }
-
-        var vehicleImage = new VehicleImage
+        catch (Exception e)
         {
-            Id = Guid.NewGuid(),
-            VehicleId = vehicleId,
-            FileName = uploadDto.File.FileName,
-            ContentType = uploadDto.File.ContentType
-        };
-
-        using (var memoryStream = new MemoryStream())
-        {
-            await uploadDto.File.CopyToAsync(memoryStream);
-            vehicleImage.Data = memoryStream.ToArray();
+            return BadRequest($"Failed to save file: {e.Message}");
         }
-
-        _context.VehicleImage.Add(vehicleImage);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetImage), new { id = vehicleImage.Id }, vehicleImage);
-    }
-    
-    [HttpGet("{id}")]
-    public async Task<ActionResult<VehicleImage>> GetImage(Guid id)
-    {
-        var vehicleImage = await _context.VehicleImage.FindAsync(id);
-
-        if (vehicleImage == null)
-        {
-            return NotFound();
-        }
-
-        return File(vehicleImage.Data, vehicleImage.ContentType);
     }
     
     [HttpDelete("/Delete/{id}")]
