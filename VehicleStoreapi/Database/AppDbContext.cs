@@ -55,16 +55,18 @@ namespace VehicleStoreapi.Database
                 .WithMany()
                 .HasForeignKey(v => v.OrderId)
                 .IsRequired();
-
-            builder.Entity<Vehicle.Vehicle>()
-                .HasMany(v => v.Images)
-                .WithOne(i => i.Vehicle)
-                .HasForeignKey(i => i.VehicleId);
-    
-            // Configuração da propriedade Data como bytea
+            
             builder.Entity<VehicleImage>()
-                .Property(vi => vi.Data)
-                .HasColumnType("bytea");
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .IsRequired();
+
+            builder.Entity<VehicleImage>()
+                .HasOne<Vehicle.Vehicle>()
+                .WithMany()
+                .HasForeignKey(v => v.VehicleId)
+                .IsRequired();
 
             // Configuração de schema
             builder.HasDefaultSchema("Store");

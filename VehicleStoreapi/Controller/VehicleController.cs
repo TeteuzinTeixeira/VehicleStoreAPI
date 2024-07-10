@@ -22,35 +22,47 @@ public class VehicleController : ControllerBase
     }
     
     [HttpPost("/SaveVehicle")]
-    public async Task<ActionResult> PostVehicle(Vehicle vehicle)
-    {
-        if (!_service.ValidarVehicle(vehicle))
-            return BadRequest("Preencha todos os campos corretamente");
-
-        _context.Vehicle.Add(vehicle);
-        await _context.SaveChangesAsync();
-        
-        return Ok(vehicle);
-    }
-
-    [HttpPost("/SaveImages")]
-    public async Task<ActionResult> UploadFile([FromForm] FileModel fileModel)
+    public async Task<ActionResult> PostVehicle([FromForm] Vehicle vehicle, FileModel fileModel)
     {
         try
         {
-            string path = Path.Combine(@"C:\Mateus\VehicleStoreAPI\Imagens", fileModel.FileName);
+            // Gera um UUID para o arquivo
+            var fileId = Guid.NewGuid();
+        
+            // Define o caminho completo usando o UUID
+            string fileName = $"{fileId}.jpg"; // Altere a extensão conforme necessário
+            string path = Path.Combine(@"C:\Mateus\VehicleStoreAPI\Imagens", fileName);
 
+            // Salva o arquivo no caminho especificado
             using (Stream stream = new FileStream(path, FileMode.Create))
             {
                 await fileModel.File.CopyToAsync(stream);
             }
 
-            return Ok();
+            // Cria a entidade VehicleImage e define seus valores
+            var vehicleImage = new VehicleImage
+            {
+                Id = fileId,
+                VehicleId = vehicle.Id,
+                UserId = vehicle.UserId,
+                Path = path
+            };
+
+            // Adiciona a entidade VehicleImage ao contexto
+            _context.VehicleImage.Add(vehicleImage);
         }
         catch (Exception e)
         {
             return BadRequest($"Failed to save file: {e.Message}");
         }
+
+        if (!_service.ValidarVehicle(vehicle))
+            return BadRequest("Preencha todos os campos corretamente");
+
+        _context.Vehicle.Add(vehicle);
+        await _context.SaveChangesAsync();
+
+        return Ok(vehicle);
     }
     
     [HttpDelete("/Delete/{id}")]

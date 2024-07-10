@@ -18,4 +18,9 @@ public class VehicleServiceImpl : VehicleService
 
         return true;
     }
+
+    public void SalvarImage(VehicleImage vehicleImage)
+    {
+        throw new NotImplementedException();
+    }
 }
