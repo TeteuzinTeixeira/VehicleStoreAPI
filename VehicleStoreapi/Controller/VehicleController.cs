@@ -22,48 +22,59 @@ public class VehicleController : ControllerBase
     }
     
     [HttpPost("/SaveVehicle")]
-    public async Task<ActionResult> PostVehicle([FromForm] Vehicle vehicle, FileModel fileModel)
+    public async Task<ActionResult> PostVehicle([FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
     {
         try
         {
-            // Gera um UUID para o arquivo
-            var fileId = Guid.NewGuid();
-        
-            // Define o caminho completo usando o UUID
-            string fileName = $"{fileId}.jpg"; // Altere a extensão conforme necessário
-            string path = Path.Combine(@"C:\Mateus\VehicleStoreAPI\Imagens", fileName);
-
-            // Salva o arquivo no caminho especificado
-            using (Stream stream = new FileStream(path, FileMode.Create))
+            if (files == null || files.Count == 0)
             {
-                await fileModel.File.CopyToAsync(stream);
+                return BadRequest("Nenhuma imagem foi enviada.");
+            }
+            
+            _context.Vehicle.Add(vehicle);
+            await _context.SaveChangesAsync();
+
+            var vehicleImages = new List<VehicleImage>();
+            string imagePath = @"C:\Mateus\VehicleStoreAPI\Imagens";
+            
+            if (!Directory.Exists(imagePath))
+            {
+                Directory.CreateDirectory(imagePath);
             }
 
-            // Cria a entidade VehicleImage e define seus valores
-            var vehicleImage = new VehicleImage
+            foreach (var file in files)
             {
-                Id = fileId,
-                VehicleId = vehicle.Id,
-                UserId = vehicle.UserId,
-                Path = path
-            };
+                var fileId = Guid.NewGuid();
+                string fileName = $"{fileId}.jpg";
+                string path = Path.Combine(imagePath, fileName);
 
-            // Adiciona a entidade VehicleImage ao contexto
-            _context.VehicleImage.Add(vehicleImage);
+                using (Stream stream = new FileStream(path, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var vehicleImage = new VehicleImage
+                {
+                    Id = fileId,
+                    VehicleId = vehicle.Id,
+                    UserId = vehicle.UserId,
+                    Path = path
+                };
+
+                vehicleImages.Add(vehicleImage);
+            }
+            
+            _context.VehicleImage.AddRange(vehicleImages);
+            await _context.SaveChangesAsync();
+
+            return Ok(vehicle);
         }
         catch (Exception e)
         {
             return BadRequest($"Failed to save file: {e.Message}");
         }
-
-        if (!_service.ValidarVehicle(vehicle))
-            return BadRequest("Preencha todos os campos corretamente");
-
-        _context.Vehicle.Add(vehicle);
-        await _context.SaveChangesAsync();
-
-        return Ok(vehicle);
     }
+
     
     [HttpDelete("/Delete/{id}")]
     public async Task<ActionResult> DeleteVehicle(Guid id)
