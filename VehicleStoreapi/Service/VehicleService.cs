@@ -6,5 +6,7 @@ public interface VehicleService
 {
     public bool ValidarVehicle(Vehicle vehicle);
 
-    public void SalvarImage(VehicleImage vehicleImage);
+    public Task<Vehicle> SaveVehicle(Vehicle vehicle, List<IFormFile> files);
+    
+    public Task<List<VehicleImage>> SaveImages(Vehicle vehicle, List<IFormFile> files);
 }

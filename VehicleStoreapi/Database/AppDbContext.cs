@@ -24,42 +24,30 @@ namespace VehicleStoreapi.Database
             builder.Entity<Vehicle.Vehicle>()
                 .Property(v => v.Id)
                 .HasDefaultValueSql("public.uuid_generate_v4()");
-    
+
             builder.Entity<VehicleImage>()
                 .Property(v => v.Id)
                 .HasDefaultValueSql("public.uuid_generate_v4()");
-    
+
             builder.Entity<Order>()
                 .Property(v => v.Id)
                 .HasDefaultValueSql("public.uuid_generate_v4()");
-    
+
             builder.Entity<OrderVehicleLink>()
                 .Property(v => v.Id)
                 .HasDefaultValueSql("public.uuid_generate_v4()");
-    
+
             // Configuração de relacionamento
-            builder.Entity<Vehicle.Vehicle>()
-                .HasOne<User>()
-                .WithMany()
-                .HasForeignKey(v => v.UserId)
-                .IsRequired();
-    
             builder.Entity<OrderVehicleLink>()
                 .HasOne<Vehicle.Vehicle>()
                 .WithMany()
                 .HasForeignKey(v => v.VehicleId)
                 .IsRequired();
-    
+
             builder.Entity<OrderVehicleLink>()
                 .HasOne<Order>()
                 .WithMany()
                 .HasForeignKey(v => v.OrderId)
-                .IsRequired();
-            
-            builder.Entity<VehicleImage>()
-                .HasOne<User>()
-                .WithMany()
-                .HasForeignKey(v => v.UserId)
                 .IsRequired();
 
             builder.Entity<VehicleImage>()

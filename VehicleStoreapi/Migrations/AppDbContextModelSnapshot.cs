@@ -265,10 +265,6 @@ namespace VehicleStoreapi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<double>("Value")
                         .HasColumnType("double precision");
 
@@ -277,8 +273,6 @@ namespace VehicleStoreapi.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Vehicle", "Store");
                 });
@@ -290,24 +284,21 @@ namespace VehicleStoreapi.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("public.uuid_generate_v4()");
 
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("FileName")
+                    b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("VehicleId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("VehicleId1")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("VehicleId");
+
+                    b.HasIndex("VehicleId1");
 
                     b.ToTable("VehicleImage", "Store");
                 });
@@ -406,24 +397,17 @@ namespace VehicleStoreapi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.Vehicle", b =>
-                {
-                    b.HasOne("VehicleStoreapi.Database.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.VehicleImage", b =>
                 {
-                    b.HasOne("VehicleStoreapi.Database.Vehicle.Vehicle", "Vehicle")
-                        .WithMany("Images")
+                    b.HasOne("VehicleStoreapi.Database.Vehicle.Vehicle", null)
+                        .WithMany()
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Vehicle");
+                    b.HasOne("VehicleStoreapi.Database.Vehicle.Vehicle", null)
+                        .WithMany("VehicleImages")
+                        .HasForeignKey("VehicleId1");
                 });
 
             modelBuilder.Entity("VehicleStoreapi.Model.Entities.OrderVehicleLink", b =>
@@ -443,7 +427,7 @@ namespace VehicleStoreapi.Migrations
 
             modelBuilder.Entity("VehicleStoreapi.Database.Vehicle.Vehicle", b =>
                 {
-                    b.Navigation("Images");
+                    b.Navigation("VehicleImages");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,126 +1,137 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
-using VehicleStoreapi.Model;
 using VehicleStoreapi.Model.Entities;
 using VehicleStoreapi.Service;
 
 namespace VehicleStoreapi;
 
-[Route("vehicle/[controller]")]
+[Route("[controller]")]
 [ApiController]
 public class VehicleController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly VehicleService _service;
-    
-    public VehicleController(AppDbContext context, VehicleService service)
+    private readonly ILogger<VehicleController> _logger;
+
+    public VehicleController(AppDbContext context, VehicleService service, ILogger<VehicleController> logger)
     {
         _context = context;
         _service = service;
+        _logger = logger;
     }
-    
-    [HttpPost("/SaveVehicle")]
+
+    [Authorize(Policy = "RequireAdminRole")]
+    [HttpPost("Save")]
     public async Task<ActionResult> PostVehicle([FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
     {
         try
         {
-            if (files == null || files.Count == 0)
-            {
-                return BadRequest("Nenhuma imagem foi enviada.");
-            }
-            
-            _context.Vehicle.Add(vehicle);
-            await _context.SaveChangesAsync();
-
-            var vehicleImages = new List<VehicleImage>();
-            string imagePath = @"C:\Mateus\VehicleStoreAPI\Imagens";
-            
-            if (!Directory.Exists(imagePath))
-            {
-                Directory.CreateDirectory(imagePath);
-            }
-
-            foreach (var file in files)
-            {
-                var fileId = Guid.NewGuid();
-                string fileName = $"{fileId}.jpg";
-                string path = Path.Combine(imagePath, fileName);
-
-                using (Stream stream = new FileStream(path, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                var vehicleImage = new VehicleImage
-                {
-                    Id = fileId,
-                    VehicleId = vehicle.Id,
-                    UserId = vehicle.UserId,
-                    Path = path
-                };
-
-                vehicleImages.Add(vehicleImage);
-            }
-            
-            _context.VehicleImage.AddRange(vehicleImages);
-            await _context.SaveChangesAsync();
-
-            return Ok(vehicle);
+            var savedVehicle = await _service.SaveVehicle(vehicle, files);
+            _logger.LogInformation("Saved Vehicle: {vehicle}", vehicle);
+            return Ok(savedVehicle);
         }
         catch (Exception e)
         {
-            return BadRequest($"Failed to save file: {e.Message}");
+            _logger.LogInformation("Failed to save vehicle");
+            return BadRequest($"Failed to save vehicle: {e.Message}");
         }
     }
 
-    
-    [HttpDelete("/Delete/{id}")]
+    [Authorize(Policy = "RequireAdminRole")]
+    [HttpDelete("Delete/{id}")]
     public async Task<ActionResult> DeleteVehicle(Guid id)
     {
+        _logger.LogInformation("DeleteVehicle method called with id: {id}", id);
         var dbProduct = await _context.Vehicle.FindAsync(id);
 
         if (dbProduct == null)
+        {
+            _logger.LogWarning("Vehicle not found with id: {id}", id);
             return NotFound();
+        }
 
         _context.Vehicle.Remove(dbProduct);
         await _context.SaveChangesAsync();
 
+        _logger.LogInformation("Vehicle deleted with id: {id}", id);
         return NoContent();
     }
-    
-    [HttpPut("/Update/{id}")]
-    public async Task<ActionResult> UpdateProduct(Vehicle vehicle)
+
+    [Authorize(Policy = "RequireAdminRole")]
+    [HttpPut("Update/{id}")]
+    public async Task<ActionResult> UpdateProduct(Guid id, [FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
     {
-        var dbProduct = await _context.Vehicle.FindAsync(vehicle.Id);
+        if (id != vehicle.Id)
+        {
+            return BadRequest("O ID do veículo na URL não corresponde ao ID do veículo na requisição.");
+        }
+
+        var dbProduct = await _context.Vehicle
+            .Include(v => v.VehicleImages)
+            .FirstOrDefaultAsync(v => v.Id == id);
 
         if (dbProduct == null)
+        {
             return NotFound();
-
-        dbProduct.Id = vehicle.Id;
+        }
+        
         dbProduct.Value = vehicle.Value;
         dbProduct.Model = vehicle.Model;
         dbProduct.Type = vehicle.Type;
         dbProduct.Year = vehicle.Year;
+        
+        if (files != null && files.Count > 0)
+        {
+            var updatedImages = await _service.SaveImages(vehicle, files);
+            
+            _context.VehicleImage.RemoveRange(dbProduct.VehicleImages);
+            
+            dbProduct.VehicleImages = updatedImages;
+        }
 
-        await _context.SaveChangesAsync();
-
-        return Ok(vehicle);
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(vehicle);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!VehicleExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
     }
+
+    private bool VehicleExists(Guid id)
+    {
+        return _context.Vehicle.Any(e => e.Id == id);
+    }
+
     
-    [HttpGet("/Get")]
+    [HttpGet("Get")]
     public async Task<ActionResult> GetVehicles()
     {
         var vehicles = await _context.Vehicle
-            .Select(v => new 
-            {
-                v.Id,
-                v.Model,
-                v.Type,
-                v.Year,
-                v.Value
-            })
+            .Join(_context.VehicleImage,
+                v => v.Id,
+                vi => vi.VehicleId,
+                (v, vi) => new
+                {
+                    v.Id,
+                    v.Model,
+                    v.Type,
+                    v.Year,
+                    v.Value,
+                    VehicleImages = new { vi.Id, vi.Path }
+                })
             .ToListAsync();
 
         return Ok(vehicles);
