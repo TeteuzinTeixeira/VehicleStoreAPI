@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
-using VehicleStoreapi.Model.Entities;
 using VehicleStoreapi.Service;
 
 namespace VehicleStoreapi;
@@ -61,36 +60,26 @@ public class VehicleController : ControllerBase
     }
 
     [Authorize(Policy = "RequireAdminRole")]
-    [HttpPut("Update/{id}")]
-    public async Task<ActionResult> UpdateProduct(Guid id, [FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
+    [HttpPut("UpdateVehicle/{id}")]
+    public async Task<ActionResult> UpdateVehicle(Guid id, [FromForm] Vehicle vehicle)
     {
         if (id != vehicle.Id)
         {
-            return BadRequest("O ID do veículo na URL não corresponde ao ID do veículo na requisição.");
+            return BadRequest($"Vehicle não encontrado para o Id: {id}");
         }
 
         var dbProduct = await _context.Vehicle
-            .Include(v => v.VehicleImages)
             .FirstOrDefaultAsync(v => v.Id == id);
 
         if (dbProduct == null)
         {
             return NotFound();
         }
-        
+
         dbProduct.Value = vehicle.Value;
         dbProduct.Model = vehicle.Model;
         dbProduct.Type = vehicle.Type;
         dbProduct.Year = vehicle.Year;
-        
-        if (files != null && files.Count > 0)
-        {
-            var updatedImages = await _service.SaveImages(vehicle, files);
-            
-            _context.VehicleImage.RemoveRange(dbProduct.VehicleImages);
-            
-            dbProduct.VehicleImages = updatedImages;
-        }
 
         try
         {
@@ -101,12 +90,10 @@ public class VehicleController : ControllerBase
         {
             if (!VehicleExists(id))
             {
-                return NotFound();
+                return NotFound($"Vehicle não encontrado com o ID: {id}");
             }
-            else
-            {
-                throw;
-            }
+
+            throw;
         }
     }
 
@@ -114,8 +101,51 @@ public class VehicleController : ControllerBase
     {
         return _context.Vehicle.Any(e => e.Id == id);
     }
-
     
+    [HttpGet("GetVehicleById/{id}")]
+    public async Task<IActionResult> GetVehicleById(Guid id)
+    {
+        var vehicle = await _context.Vehicle
+            .Where(v => v.Id == id)
+            .Select(v => new
+            {
+                v.Id,
+                v.Model,
+                v.Type,
+                v.Year,
+                v.Value
+            })
+            .FirstOrDefaultAsync();
+
+        if (vehicle == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(vehicle);
+    }
+    
+    [HttpGet("GetImagesByVehicleId/{id}")]
+    public async Task<IActionResult> GetImagesByVehicleId(Guid id)
+    {
+        var images = await _context.VehicleImage
+            .Where(vi => vi.VehicleId == id)
+            .Select(vi => new
+            {
+                vi.Id,
+                vi.VehicleId,
+                vi.Path
+            })
+            .ToListAsync();
+
+        if (!images.Any())
+        {
+            return NotFound();
+        }
+
+        return Ok(images);
+    }
+
     [HttpGet("Get")]
     public async Task<ActionResult> GetVehicles()
     {

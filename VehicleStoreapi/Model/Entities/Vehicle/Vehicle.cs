@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace VehicleStoreapi.Database.Vehicle
 {
@@ -10,6 +11,5 @@ namespace VehicleStoreapi.Database.Vehicle
         public string Type { get; set; }
         public string Year { get; set; }
         public double Value { get; set; }
-        public ICollection<VehicleImage> VehicleImages { get; set; }
     }
 }

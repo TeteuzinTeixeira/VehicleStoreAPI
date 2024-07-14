@@ -34,4 +34,8 @@
       <Compile Remove="Migrations\20240710130750_CorrigirTipoDeDadosData.Designer.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Model\Entities\DTO\" />
+    </ItemGroup>
+
 </Project>
