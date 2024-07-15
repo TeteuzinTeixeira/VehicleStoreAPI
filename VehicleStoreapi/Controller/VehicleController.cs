@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
+using VehicleStoreapi.Model.Entities.Dto;
 using VehicleStoreapi.Service;
 
 namespace VehicleStoreapi;
 
+[Authorize]
 [Route("[controller]")]
 [ApiController]
 public class VehicleController : ControllerBase
@@ -14,12 +16,14 @@ public class VehicleController : ControllerBase
     private readonly AppDbContext _context;
     private readonly VehicleService _service;
     private readonly ILogger<VehicleController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public VehicleController(AppDbContext context, VehicleService service, ILogger<VehicleController> logger)
+    public VehicleController(AppDbContext context, VehicleService service, ILogger<VehicleController> logger, IWebHostEnvironment environment)
     {
         _context = context;
         _service = service;
         _logger = logger;
+        _environment = environment;
     }
 
     [Authorize(Policy = "RequireAdminRole")]
@@ -102,27 +106,44 @@ public class VehicleController : ControllerBase
         return _context.Vehicle.Any(e => e.Id == id);
     }
     
-    [HttpGet("GetVehicleById/{id}")]
-    public async Task<IActionResult> GetVehicleById(Guid id)
+    [Authorize(Policy = "RequireAdminRole")]
+    [HttpPost("UpdateVehicleImages/{vehicleId}")]
+    public async Task<IActionResult> UpdateVehicleImages(Guid vehicleId, [FromForm] List<Guid> removedImageIds, [FromForm] List<IFormFile> files)
     {
-        var vehicle = await _context.Vehicle
-            .Where(v => v.Id == id)
-            .Select(v => new
-            {
-                v.Id,
-                v.Model,
-                v.Type,
-                v.Year,
-                v.Value
-            })
-            .FirstOrDefaultAsync();
-
-        if (vehicle == null)
+        var vehicleExists = await _context.Vehicle.AnyAsync(v => v.Id == vehicleId);
+        if (!vehicleExists)
         {
             return NotFound();
         }
+        
+        var imagesToRemove = await _context.VehicleImage
+            .Where(i => removedImageIds.Contains(i.Id) && i.VehicleId == vehicleId)
+            .ToListAsync();
+        _context.VehicleImage.RemoveRange(imagesToRemove);
+        
+        foreach (var file in files)
+        {
+            if (file.Length > 0)
+            {
+                var filePath = Path.Combine(_environment.WebRootPath, "uploads", file.FileName);
+                
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+                
+                var newImage = new VehicleImage
+                {
+                    Path = $"/uploads/{file.FileName}",
+                    VehicleId = vehicleId
+                };
+                _context.VehicleImage.Add(newImage);
+            }
+        }
 
-        return Ok(vehicle);
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
     
     [HttpGet("GetImagesByVehicleId/{id}")]
