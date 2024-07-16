@@ -1,9 +1,12 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
 using VehicleStoreapi.Model.Entities;
+using VehicleStoreapi.Service;
+using VehicleStoreapi.Service.Impl;
 
 namespace VehicleStoreapi.Controller;
 
@@ -13,34 +16,31 @@ namespace VehicleStoreapi.Controller;
 public class OrderController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IOrderService _service;
 
-    public OrderController(AppDbContext context)
+    public OrderController(AppDbContext context, IOrderService service)
     {
         _context = context;
+        _service = service;
     }
     
     [HttpPost("CreateOrder")]
     public async Task<ActionResult<Order>> CreateOrder(Order order, Guid vehicleId)
     {
         order.UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
-        var dbVehicle = await _context.Vehicle.FindAsync(vehicleId);
-        if (dbVehicle == null)
+
+        if (!await _service.CheckIfVehicleExists(vehicleId))
         {
-            return NotFound("Vehicle not found.");
+            return NotFound("Vehicle não encontrado");
         }
-        
-        _context.Order.Add(order);
-        await _context.SaveChangesAsync();
-        
-        var orderVehicleLink = new OrderVehicleLink
+
+        if (await _service.CheckIfVehicleAlreadyLinked(vehicleId))
         {
-            OrderId = order.Id,
-            VehicleId = vehicleId
-        };
-        
-        _context.OrderVehicleLink.Add(orderVehicleLink);
-        await _context.SaveChangesAsync();
+            return BadRequest("Este Vehicle encontra-se indisponivel para compra.");
+        }
+
+        await _service.AddOrder(order);
+        await _service.LinkOrderToVehicle(order.Id, vehicleId);
 
         return Ok(order);
     }

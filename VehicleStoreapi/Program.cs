@@ -69,6 +69,7 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 builder.Services.AddScoped<IVehicleService, VehicleServiceImpl>();
+builder.Services.AddScoped<IOrderService, OrderServiceImpl>();
 
 // Configurando políticas de autorização
 builder.Services.AddAuthorization(options =>
