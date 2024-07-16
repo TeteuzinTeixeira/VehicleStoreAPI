@@ -15,6 +15,8 @@ namespace VehicleStoreapi.Database
             
         public DbSet<Vehicle.Vehicle> Vehicle { get; set; }
         public DbSet<VehicleImage> VehicleImage { get; set; }
+        public DbSet<Order> Order { get; set; }
+        public DbSet<OrderVehicleLink> OrderVehicleLink { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -45,10 +47,7 @@ namespace VehicleStoreapi.Database
                 .IsRequired();
 
             builder.Entity<OrderVehicleLink>()
-                .HasOne<Order>()
-                .WithMany()
-                .HasForeignKey(v => v.OrderId)
-                .IsRequired();
+                .HasKey(ovl => ovl.Id);
 
             builder.Entity<VehicleImage>()
                 .HasOne<Vehicle.Vehicle>()
