@@ -1,10 +1,7 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Http;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace VehicleStoreapi.Database.Vehicle
-{
-    public class VehicleImage
+namespace VehicleStoreapi.Database.Vehicle;
+public class VehicleImage
     {
         public Guid Id { get; set; }
         
@@ -15,4 +12,3 @@ namespace VehicleStoreapi.Database.Vehicle
         public IFormFile File { get; set; }
         public string Path { get; set; }
     }
-}

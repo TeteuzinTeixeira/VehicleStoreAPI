@@ -68,7 +68,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 
-builder.Services.AddScoped<VehicleService, VehicleServiceImpl>();
+builder.Services.AddScoped<IVehicleService, VehicleServiceImpl>();
 
 // Configurando políticas de autorização
 builder.Services.AddAuthorization(options =>
