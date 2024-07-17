@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
+using VehicleStoreapi.Model.Entities.Dto;
 using VehicleStoreapi.Service;
 
 namespace VehicleStoreapi.Controller;
@@ -14,21 +16,24 @@ public class VehicleController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IVehicleService _service;
+    private readonly IMapper _mapper;
 
-    public VehicleController(AppDbContext context, IVehicleService service)
+    public VehicleController(AppDbContext context, IVehicleService service, IMapper mapper)
     {
         _context = context;
         _service = service;
+        _mapper = mapper;
     }
 
     [Authorize(Policy = "RequireAdminRole")]
     [HttpPost("Save")]
-    public async Task<ActionResult> PostVehicle([FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
+    public async Task<ActionResult<VehicleDto>> PostVehicle([FromForm] Vehicle vehicle, [FromForm] List<IFormFile> files)
     {
         try
         {
             var savedVehicle = await _service.SaveVehicle(vehicle, files);
-            return Ok(savedVehicle);
+            var vehicleDto = _mapper.Map<VehicleDto>(savedVehicle);
+            return Ok(vehicleDto);
         }
         catch (Exception e)
         {
@@ -52,23 +57,32 @@ public class VehicleController : ControllerBase
         
         return NoContent();
     }
-
+    
+    [Authorize(Policy = "RequireAdminRole")]
     [HttpPut("UpdateVehicle/{id:guid}")]
-    public async Task<ActionResult> UpdateVehicle(Guid id, [FromForm] Vehicle vehicle)
+    public async Task<ActionResult<VehicleDto>> UpdateVehicle(Guid id, [FromForm] Vehicle vehicle)
     {
         if (id != vehicle.Id)
         {
             return BadRequest($"Vehicle não encontrado para o Id: {id}");
         }
 
-        var result = await _service.UpdateVehicleAsync(id, vehicle);
-
-        if (!result)
+        var existingVehicle = await _service.GetVehicleByIdAsync(id);
+        if (existingVehicle == null)
         {
             return NotFound($"Vehicle não encontrado para o Id: {id}");
         }
 
-        return Ok(vehicle);
+        var result = await _service.UpdateVehicleAsync(id, vehicle);
+
+        if (!result)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Falha ao atualizar o veículo");
+        }
+
+        var vehicleDto = _mapper.Map<VehicleDto>(vehicle);
+
+        return Ok(vehicleDto);
     }
     
     [HttpPost("UpdateVehicleImages/{vehicleId:guid}")]
@@ -106,8 +120,10 @@ public class VehicleController : ControllerBase
         {
             return NotFound($"Vehicle não encontrado com o id: {id}");
         }
+        
+        var vehicleDto = _mapper.Map<VehicleDto>(vehicle);
 
-        return Ok(vehicle);
+        return Ok(vehicleDto);
     }
 
     [HttpGet("GetVehiclesAndImages")]
@@ -119,7 +135,9 @@ public class VehicleController : ControllerBase
         {
             return NotFound();
         }
+        
+        var vehicleDto = _mapper.Map<List<VehicleDto>>(vehicles);
 
-        return Ok(vehicles);
+        return Ok(vehicleDto);
     }
 }

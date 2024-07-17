@@ -114,7 +114,9 @@ if (app.Environment.IsDevelopment())
 
         if (userManager.Users.All(u => u.UserName != adminUser.UserName))
         {
-            await userManager.CreateAsync(adminUser, "AdminPassword123!");
+            await userManager.CreateAsync(adminUser, "" +
+                                                     "AdminPassword123!" +
+                                                     "");
             await userManager.AddToRoleAsync(adminUser, "Admin");
         }
     }
