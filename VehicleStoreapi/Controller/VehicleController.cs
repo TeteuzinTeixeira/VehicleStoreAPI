@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using VehicleStoreapi.Database;
 using VehicleStoreapi.Database.Vehicle;
 using VehicleStoreapi.Model.Entities.Dto;
@@ -37,7 +36,7 @@ public class VehicleController : ControllerBase
         }
         catch (Exception e)
         {
-            return BadRequest($"Failed to save vehicle: {e.Message}");
+            return BadRequest($"Falha ao salvar o vehicle: {e.Message}");
         }
     }
 
@@ -49,7 +48,7 @@ public class VehicleController : ControllerBase
 
         if (dbProduct == null)
         {
-            return NotFound();
+            return NotFound($"Vehicle não encontrado para o Id: {id}");
         }
 
         _context.Vehicle.Remove(dbProduct);
@@ -58,7 +57,6 @@ public class VehicleController : ControllerBase
         return NoContent();
     }
     
-    [Authorize(Policy = "RequireAdminRole")]
     [HttpPut("UpdateVehicle/{id:guid}")]
     public async Task<ActionResult<VehicleDto>> UpdateVehicle(Guid id, [FromForm] Vehicle vehicle)
     {
@@ -86,7 +84,7 @@ public class VehicleController : ControllerBase
     }
     
     [HttpPost("UpdateVehicleImages/{vehicleId:guid}")]
-    public async Task<IActionResult> UpdateVehicleImages(Guid vehicleId, [FromForm] List<Guid> removedImageIds, [FromForm] List<IFormFile> files)
+    public async Task<IActionResult> UpdateVehicleImages(Guid vehicleId, [FromForm] List<Guid>? removedImageIds, [FromForm] List<IFormFile> files)
     {
         var result = await _service.UpdateVehicleImagesAsync(vehicleId, removedImageIds, files);
 
@@ -102,10 +100,16 @@ public class VehicleController : ControllerBase
     public async Task<IActionResult> GetImagesByVehicleId(Guid id)
     {
         var images = await _service.GetImagesByVehicleIdAsync(id);
+        var vehicle = await _service.GetVehicleByIdAsync(id);
+
+        if (vehicle == null)
+        {
+            return NotFound($"Vehicle não encontrado com o id: {id}");
+        }
 
         if (images.Count == 0)
         {
-            return NotFound();
+            return NotFound($"Imagens não encontradas para o vehicle om o id: {id}");
         }
 
         return Ok(images);
@@ -133,7 +137,7 @@ public class VehicleController : ControllerBase
 
         if (vehicles.Count == 0)
         {
-            return NotFound();
+            return NotFound("Vehicles não encontrados");
         }
         
         var vehicleDto = _mapper.Map<List<VehicleDto>>(vehicles);

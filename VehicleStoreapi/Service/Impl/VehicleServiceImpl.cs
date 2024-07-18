@@ -111,40 +111,55 @@ public class VehicleServiceImpl : IVehicleService
         return _context.Vehicle.Any(e => e.Id == id);
     }
     
-    public async Task<bool> UpdateVehicleImagesAsync(Guid vehicleId, List<Guid> removedImageIds, List<IFormFile> files)
+    public async Task<bool> UpdateVehicleImagesAsync(Guid vehicleId, 
+        List<Guid>? removedImageIds, 
+        List<IFormFile> files)
     {
+        // Check if the vehicle exists
         var vehicleExists = await _context.Vehicle.AnyAsync(v => v.Id == vehicleId);
         if (!vehicleExists)
         {
             return false;
         }
-        
-        var imagesToRemove = await _context.VehicleImage
-            .Where(i => removedImageIds.Contains(i.Id) && i.VehicleId == vehicleId)
-            .ToListAsync();
-        _context.VehicleImage.RemoveRange(imagesToRemove);
-        
+
+        if (!removedImageIds.Any())
+        {
+            var imagesToRemove = await _context.VehicleImage
+                .Where(i => removedImageIds.Contains(i.Id) && i.VehicleId == vehicleId)
+                .ToListAsync();
+
+            _context.VehicleImage.RemoveRange(imagesToRemove);
+        }
+
+        // Save new images
         foreach (var file in files)
         {
             if (file.Length <= 0) continue;
-            var filePath = Path.Combine(_environment.WebRootPath, "uploads", file.FileName);
 
-            await using (var stream = new FileStream(filePath, FileMode.Create))
+            // Define the file path
+            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            // Copy file to server
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
-                
+            
+            // Add new image to database
             var newImage = new VehicleImage
             {
-                Path = $"/uploads/{file.FileName}",
+                Path = $"/uploads/{uniqueFileName}",
                 VehicleId = vehicleId
             };
             _context.VehicleImage.Add(newImage);
         }
 
+        // Save changes to database
         await _context.SaveChangesAsync();
 
-        return true;
+        return true; // Operation successful
     }
     
     public async Task<VehicleDto?> GetVehicleByIdAsync(Guid id)

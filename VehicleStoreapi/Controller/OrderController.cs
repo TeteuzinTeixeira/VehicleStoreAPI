@@ -59,7 +59,7 @@ public class OrderController : ControllerBase
 
         if (dbProduct == null)
         {
-            return NotFound();
+            return NotFound($"Nenhum pedido encontrado para o vehicle id: {vehicleId}");
         }
 
         _context.OrderVehicleLink.Remove(dbProduct);

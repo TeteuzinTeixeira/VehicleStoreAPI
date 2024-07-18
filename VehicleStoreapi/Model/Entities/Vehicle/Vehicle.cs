@@ -1,4 +1,6 @@
-﻿namespace VehicleStoreapi.Database.Vehicle
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace VehicleStoreapi.Database.Vehicle
 {
     public class Vehicle
     {
@@ -7,5 +9,7 @@
         public string Type { get; set; }
         public string Year { get; set; }
         public decimal Value { get; set; }
+        [NotMapped]
+        public ICollection<VehicleImage> VehicleImages { get; set; }
     }
 }
