@@ -28,11 +28,21 @@
         <Content Include="..\.dockerignore">
             <Link>.dockerignore</Link>
         </Content>
+        <Content Remove="Model\Enum\**" />
     </ItemGroup>
 
     <ItemGroup>
       <Compile Remove="Migrations\20240710130750_CorrigirTipoDeDadosData.cs" />
       <Compile Remove="Migrations\20240710130750_CorrigirTipoDeDadosData.Designer.cs" />
+      <Compile Remove="Model\Enum\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Model\Enum\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Model\Enum\**" />
     </ItemGroup>
 
 </Project>

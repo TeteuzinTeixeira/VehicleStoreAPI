@@ -122,7 +122,7 @@ public class VehicleServiceImpl : IVehicleService
             return false;
         }
 
-        if (!removedImageIds.Any())
+        if (removedImageIds.Any())
         {
             var imagesToRemove = await _context.VehicleImage
                 .Where(i => removedImageIds.Contains(i.Id) && i.VehicleId == vehicleId)
@@ -137,8 +137,8 @@ public class VehicleServiceImpl : IVehicleService
             if (file.Length <= 0) continue;
 
             // Define the file path
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            var uploadsFolder = Path.Combine(@"C:\Mateus\VehicleStoreAPI\Imagens");
+            var uniqueFileName = Guid.NewGuid().ToString();
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             // Copy file to server

@@ -8,7 +8,10 @@ public class AutoMapperProfile : Profile
 {
     public AutoMapperProfile()
     {
-        CreateMap<Order, OrderDto>()
-            .ReverseMap();
+        CreateMap<Vehicle, VehicleDto>();
+        CreateMap<VehicleDto, Vehicle>();
+        CreateMap<Order, OrderDto>();
+        CreateMap<OrderDto, Order>();
+        CreateMap<VehicleWithImagesDto, VehicleDto>();
     }
 }
